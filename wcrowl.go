@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"os/exec"
 	"strings"
+	"time"
 )
 
 // type Site struct {
@@ -17,30 +18,41 @@ var urlReg = regexp.MustCompile(`href=["'][^"']+["']`)
 
 type Crawler struct {
 	URLs map[string]string
+	Site string
 }
 
-func (c *Crawler) Do(site string) []string {
+func (c *Crawler) Do(site string) map[string]string {
+	c.Site = site
+	c.URLs = map[string]string{}
+	c.URLs[site] = ""
 	c.recCrawl(site)
-	fmt.Println(c.URLs)
-	return nil
+
+	return c.URLs
 }
 
-func (c *Crawler) recCrawl(url string) []string {
+func (c *Crawler) recCrawl(url string) {
 	urls := c.GetLinks(url)
 	_ = urls
-	return nil // TODO
-	for _, url := range urls {
-		return c.recCrawl(url)
+	for link, _ := range urls {
+		time.Sleep(time.Second / 10)
+		fmt.Println(link)
+
+		c.recCrawl(link)
 	}
-	return nil
 }
 
 // 未探索のリンクのみを返す
 func (c *Crawler) GetLinks(url string) map[string]string {
 	links, _ := GetLinks(url)
-
 	newlink := map[string]string{}
 	for _, link := range links {
+		if link == "" {
+			continue
+		}
+		if strings.HasPrefix(link, "/") {
+			link = strings.TrimSuffix(c.Site, "/") + link
+		}
+
 		_, ok := c.URLs[link]
 		if !ok {
 			newlink[link] = url
